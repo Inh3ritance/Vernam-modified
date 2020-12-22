@@ -1,0 +1,13 @@
+C:\Users\marcos\Documents\GitHub\Vernam-modified\VernamModified\bin\Debug\netcoreapp3.1\VernamModified.exe
+C:\Users\marcos\Documents\GitHub\Vernam-modified\VernamModified\bin\Debug\netcoreapp3.1\VernamModified.deps.json
+C:\Users\marcos\Documents\GitHub\Vernam-modified\VernamModified\bin\Debug\netcoreapp3.1\VernamModified.runtimeconfig.json
+C:\Users\marcos\Documents\GitHub\Vernam-modified\VernamModified\bin\Debug\netcoreapp3.1\VernamModified.runtimeconfig.dev.json
+C:\Users\marcos\Documents\GitHub\Vernam-modified\VernamModified\bin\Debug\netcoreapp3.1\VernamModified.dll
+C:\Users\marcos\Documents\GitHub\Vernam-modified\VernamModified\bin\Debug\netcoreapp3.1\VernamModified.pdb
+C:\Users\marcos\Documents\GitHub\Vernam-modified\VernamModified\obj\Debug\netcoreapp3.1\VernamModified.csprojAssemblyReference.cache
+C:\Users\marcos\Documents\GitHub\Vernam-modified\VernamModified\obj\Debug\netcoreapp3.1\VernamModified.AssemblyInfoInputs.cache
+C:\Users\marcos\Documents\GitHub\Vernam-modified\VernamModified\obj\Debug\netcoreapp3.1\VernamModified.AssemblyInfo.cs
+C:\Users\marcos\Documents\GitHub\Vernam-modified\VernamModified\obj\Debug\netcoreapp3.1\VernamModified.csproj.CoreCompileInputs.cache
+C:\Users\marcos\Documents\GitHub\Vernam-modified\VernamModified\obj\Debug\netcoreapp3.1\VernamModified.dll
+C:\Users\marcos\Documents\GitHub\Vernam-modified\VernamModified\obj\Debug\netcoreapp3.1\VernamModified.pdb
+C:\Users\marcos\Documents\GitHub\Vernam-modified\VernamModified\obj\Debug\netcoreapp3.1\VernamModified.genruntimeconfig.cache
