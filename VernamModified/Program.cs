@@ -20,7 +20,8 @@ namespace VernamModified {
             // Append Hash with String, convert to bit array
             Console.WriteLine("original String appended with hash");
             byte[] data = sha512(originalText);
-            originalText += shaToString(data);
+            String hash = shaToString(data);
+            originalText += hash;
             Console.WriteLine(originalText);
             BitArray message = convertStringToBits(originalText);
             //Console.WriteLine(message.Length);
@@ -45,7 +46,11 @@ namespace VernamModified {
             //PrintBits(decr);
 
             Console.WriteLine("Results:");
-            Console.WriteLine(convertBitsToUTF8(decr));
+            String results = convertBitsToUTF8(decr);
+            if (results.Contains(hash)) {
+                results = results.Replace(hash, "");
+            }
+            Console.WriteLine(results);
         }
 
         static byte[] sha512(String str) {
