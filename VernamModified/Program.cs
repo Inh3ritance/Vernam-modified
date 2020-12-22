@@ -1,52 +1,105 @@
 ﻿using System;
 using System.Text;
+using System.Collections;
 using System.Security.Cryptography;
 
 namespace VernamModified {
     class Program {
 
-        private static String privatekey = "C224575EBA1E0B2778C603796199AEFC2972B160862B9AB603A9AC7329F95A16E91D713A1DA737D15348E943F0BE9B65D505EF14AF19DA7B16F692DC1BC3A815";
+        private static String privatekey = "a5E08D364CE89FFADF5DA12A7E14D1C3B303F283A1F3D4A0A36C4621FCFF8048F160E0A7A35ADFF0B57D63BE63DF5AD94479A4684E440486863B49B4D2FE79A00"; // correct 128 * 8 = 1024
 
         static void Main(string[] args) {
+            
+            //Prompt user String
             Console.WriteLine("Vernam modified: Enter text to be encrypted.");
             string originalText = Console.ReadLine();
             Console.WriteLine("Your input: " + originalText);
 
+            // Append Hash with String, convert to bit array
             Console.WriteLine("original String appended with hash");
             byte[] data = sha512(originalText);
-            originalText += getBytesToString(data);
-            Console.WriteLine(originalText);
+            originalText += shaToString(data);
+            BitArray message = convertStringToBits(originalText);
+            //Console.WriteLine(message.Length);
+            PrintBits(message);
 
-            Console.WriteLine("data XOR w/priavte key");
-            byte[] encr = XOR(getStringToBytes(originalText),getStringToBytes(privatekey));
-            String encr_string = getBytesToString(encr);
-            Console.WriteLine(encr_string);
+            // Convert private key to bit array
+            Console.WriteLine("private key");
+            BitArray encryptedbits = convertStringToBits(privatekey);
+            //Console.WriteLine(encryptedbits.Length);
+            PrintBits(encryptedbits);
 
-            //byte[] decr = XOR(getStringToBytes(encr_string), getStringToBytes(privatekey));
-            //Console.WriteLine(getBytesToString(decr));
+            // Xor privatekey and mesage
+            Console.WriteLine("data XOR w/private key");
+            BitArray encr = message.Xor(encryptedbits);
+            //Console.WriteLine(encr.Length);
+            PrintBits(encr);
+
+            // Decrypt encrypted message with XOR w/ priavte key
+            Console.WriteLine("Decrypting encryption");
+            BitArray decr = encr.Xor(encryptedbits);
+            //Console.WriteLine(decr.Length);
+            PrintBits(decr);
+
+            Console.WriteLine("\n Results:");
+            Console.WriteLine(convertBitsToString(decr));
         }
 
         static byte[] sha512(String str) {
-            byte[] hash;
-            var data = Encoding.UTF8.GetBytes(str);
-            using (SHA512 shaM = new SHA512Managed()) {
-                hash = shaM.ComputeHash(data);
+            using (SHA512 sha512Hash = SHA512.Create()) {
+                byte[] sourceBytes = Encoding.UTF8.GetBytes(str);
+                byte[] hashBytes = sha512Hash.ComputeHash(sourceBytes);
+                Console.WriteLine("Hash length:" + hashBytes.Length);
+                return hashBytes;
             }
-            return hash;
+        }
+
+        static String shaToString(byte[] bits) {
+            StringBuilder builder = new StringBuilder();
+            for (int i = 0; i < bits.Length; i++)
+                builder.Append(bits[i].ToString("x2"));
+            return builder.ToString();
         }
 
         static byte[] getStringToBytes(String str) {
-            return Encoding.UTF8.GetBytes(str);
+            return System.Text.Encoding.UTF8.GetBytes(str);
         }
 
-        static String getBytesToString(byte[] bits) {
-            return System.Text.Encoding.UTF8.GetString(bits, 0, bits.Length);
+        static BitArray convertStringToBits(String str) {
+            byte[] bt = getStringToBytes(str);
+            Array.Reverse(bt);
+            BitArray bit = new BitArray(bt);
+            return bit;
         }
 
-        static byte[] XOR(byte[] buffer1, byte[] buffer2) {
-            for (int i = 0; i < buffer1.Length; i++)
-                buffer1[i] ^= buffer2[i];
-            return buffer1;
+        static void PrintBits(BitArray bit) {
+            StringBuilder sb = new StringBuilder();
+            for (int i = bit.Length - 1; i >= 0; i--){
+                if (bit[i] == true)
+                    sb.Append(1);
+                else
+                    sb.Append(0);
+            }
+            Console.WriteLine(sb.ToString());
         }
+
+        static String convertBitsToString(BitArray bits) {
+            int numBytes = bits.Count / 8;
+            if (bits.Count % 8 != 0) numBytes++;
+            byte[] bytes = new byte[numBytes];
+            int byteIndex = 0, bitIndex = 0;
+            for (int i = 0; i < bits.Count; i++) {
+                if (bits[i])
+                    bytes[byteIndex] |= (byte)(1 << (7 - bitIndex));
+                bitIndex++;
+                if (bitIndex == 8) {
+                    bitIndex = 0;
+                    byteIndex++;
+                }
+            }
+            String res = System.Text.Encoding.UTF8.GetString(bytes);
+            return res;
+        }
+
     }
 }
