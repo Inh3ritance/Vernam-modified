@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Text;
+using System.Linq;
+using System.Text.RegularExpressions;
 using System.Collections;
 using System.Security.Cryptography;
 
@@ -19,30 +21,31 @@ namespace VernamModified {
             Console.WriteLine("original String appended with hash");
             byte[] data = sha512(originalText);
             originalText += shaToString(data);
+            Console.WriteLine(originalText);
             BitArray message = convertStringToBits(originalText);
             //Console.WriteLine(message.Length);
-            PrintBits(message);
+            //PrintBits(message);
 
             // Convert private key to bit array
             Console.WriteLine("private key");
             BitArray encryptedbits = convertStringToBits(privatekey);
             //Console.WriteLine(encryptedbits.Length);
-            PrintBits(encryptedbits);
+            //PrintBits(encryptedbits);
 
             // Xor privatekey and mesage
             Console.WriteLine("data XOR w/private key");
             BitArray encr = message.Xor(encryptedbits);
             //Console.WriteLine(encr.Length);
-            PrintBits(encr);
+            //PrintBits(encr);
 
             // Decrypt encrypted message with XOR w/ priavte key
             Console.WriteLine("Decrypting encryption");
             BitArray decr = encr.Xor(encryptedbits);
             //Console.WriteLine(decr.Length);
-            PrintBits(decr);
+            //PrintBits(decr);
 
-            Console.WriteLine("\n Results:");
-            Console.WriteLine(convertBitsToString(decr));
+            Console.WriteLine("Results:");
+            Console.WriteLine(convertBitsToUTF8(decr));
         }
 
         static byte[] sha512(String str) {
@@ -83,22 +86,22 @@ namespace VernamModified {
             Console.WriteLine(sb.ToString());
         }
 
-        static String convertBitsToString(BitArray bits) {
-            int numBytes = bits.Count / 8;
-            if (bits.Count % 8 != 0) numBytes++;
-            byte[] bytes = new byte[numBytes];
-            int byteIndex = 0, bitIndex = 0;
-            for (int i = 0; i < bits.Count; i++) {
-                if (bits[i])
-                    bytes[byteIndex] |= (byte)(1 << (7 - bitIndex));
-                bitIndex++;
-                if (bitIndex == 8) {
-                    bitIndex = 0;
-                    byteIndex++;
-                }
+        static string convertBitsToString(BitArray bit) {
+            StringBuilder sb = new StringBuilder();
+            for (int i = bit.Length - 1; i >= 0; i--) {
+                if (bit[i] == true)
+                    sb.Append(1);
+                else
+                    sb.Append(0);
             }
-            String res = System.Text.Encoding.UTF8.GetString(bytes);
-            return res;
+            return sb.ToString();
+        }
+
+        static String convertBitsToUTF8(BitArray bits) {
+          return Encoding.UTF8.GetString(Regex.Split(convertBitsToString(bits), "(.{8})")
+              .Where(binary => !String.IsNullOrEmpty(binary))
+              .Select(binary => Convert.ToByte(binary, 2))
+              .ToArray());
         }
 
     }
