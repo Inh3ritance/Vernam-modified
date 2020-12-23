@@ -54,21 +54,37 @@ namespace VernamModified {
 
             Console.WriteLine("Results:");
             String results = convertBitsToUTF8(decr);
-            while (results.Length >= 128) {
+            while (true) {
                 if (results.Contains(hash)) {
                     results = results.Replace(hash, "");
                     hash = shaToString(sha512(hash));
                 } else if (true) {
                     int i = 0;
-                    while (i < 128) {
-                        bool rez = string.Equals(results.Substring(i,results.Length - i), (hash.Substring(0, hash.Length - i)));
-                        if (rez) {
-                            results = results.Substring(0, i);
-                            break;
+                    if (results.Length > 128) {
+                        string start,end = "";
+                        start = results.Substring(0, results.Length - 128);
+                        end = results.Substring(results.Length - 128, 128);
+                        while (i < 128) {
+                            bool rez = string.Equals(end.Substring(i, end.Length - i), (hash.Substring(0, hash.Length - i)));
+                            if (rez) {
+                                end = end.Substring(0,i);
+                                break;
+                            }
+                            i++;
                         }
-                        i++;
+                        results = start + end;
+                        break;
+                    } else {
+                        while (i < 128) {
+                            bool rez = string.Equals(results.Substring(i, results.Length - i), (hash.Substring(0, hash.Length - i)));
+                            if (rez) {
+                                results = results.Substring(0, i);
+                                break;
+                            }
+                            i++;
+                        }
+                        break;
                     }
-                    break;
                 }
             }
             Console.WriteLine(results);
