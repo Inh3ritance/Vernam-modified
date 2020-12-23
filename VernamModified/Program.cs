@@ -8,7 +8,7 @@ using System.Security.Cryptography;
 namespace VernamModified {
     class Program {
 
-        private static String privatekey = "a5E08D364CE89FFADF5DA12A7E14D1C3B303F283A1F3D4A0A36C4621FCFF8048F160E0A7A35ADFF0B57D63BE63DF5AD94479A4684E440486863B49B4D2FE79A00"; // correct 128 * 8 = 1024
+        private static String privatekey = "5E08D364CE89FFADF5DA12A7E14D1C3B303F283A1F3D4A0A36C4621FCFF8048F160E0A7A35ADFF0B57D63BE63DF5AD94479A4684E440486863B49B4D2FE79A005E08D364CE89FFADF5DA12A7E14D1C3B303F283A1F3D4A0A36C4621FCFF8048F160E0A7A35ADFF0B57D63BE63DF5AD94479A4684E440486863B49B4D2FE79A005E08D364CE89FFADF5DA12A7E14D1C3B303F283A1F3D4A0A36C4621FCFF8048F160E0A7A35ADFF0B57D63BE63DF5AD94479A4684E440486863B49B4D2FE79A005E08D364CE89FFADF5DA12A7E14D1C3B303F283A1F3D4A0A36C4621FCFF8048F160E0A7A35ADFF0B57D63BE63DF5AD94479A4684E440486863B49B4D2FE79A00";
 
         static void Main(string[] args) {
             
@@ -22,7 +22,14 @@ namespace VernamModified {
             byte[] data = sha512(originalText);
             String hash = shaToString(data);
             originalText += hash;
-            Console.WriteLine(originalText);
+            String hash_rep = hash;
+            while (originalText.Length < privatekey.Length) {
+                hash_rep = shaToString(sha512(hash_rep));
+                originalText += hash_rep;
+            }
+            originalText = originalText.Substring(0, privatekey.Length);
+            //Console.WriteLine(originalText.Length);
+            //Console.WriteLine(privatekey.Length);
             BitArray message = convertStringToBits(originalText);
             //Console.WriteLine(message.Length);
             //PrintBits(message);
@@ -47,8 +54,22 @@ namespace VernamModified {
 
             Console.WriteLine("Results:");
             String results = convertBitsToUTF8(decr);
-            if (results.Contains(hash)) {
-                results = results.Replace(hash, "");
+            while (results.Length >= 128) {
+                if (results.Contains(hash)) {
+                    results = results.Replace(hash, "");
+                    hash = shaToString(sha512(hash));
+                } else if (true) {
+                    int i = 0;
+                    while (i < 128) {
+                        bool rez = string.Equals(results.Substring(i,results.Length - i), (hash.Substring(0, hash.Length - i)));
+                        if (rez) {
+                            results = results.Substring(0, i);
+                            break;
+                        }
+                        i++;
+                    }
+                    break;
+                }
             }
             Console.WriteLine(results);
         }
@@ -57,7 +78,6 @@ namespace VernamModified {
             using (SHA512 sha512Hash = SHA512.Create()) {
                 byte[] sourceBytes = Encoding.UTF8.GetBytes(str);
                 byte[] hashBytes = sha512Hash.ComputeHash(sourceBytes);
-                Console.WriteLine("Hash length:" + hashBytes.Length);
                 return hashBytes;
             }
         }
