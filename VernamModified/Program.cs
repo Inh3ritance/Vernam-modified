@@ -10,10 +10,12 @@ namespace VernamModified {
 
         // Assume Key is generated with a good unguessable seed...
         private static String privatekey = "5E08D364CE89FFADF5DA12A7E14D1C3B303F283A1F3D4A0A36C4621FCFF8048F160E0A7A35ADFF0B57D63BE63DF5AD94479A4684E440486863B49B4D2FE79A005E08D364CE89FFADF5DA12A7E14D1C3B303F283A1F3D4A0A36C4621FCFF8048F160E0A7A35ADFF0B57D63BE63DF5AD94479A4684E440486863B49B4D2FE79A005E08D364CE89FFADF5DA12A7E14D1C3B303F283A1F3D4A0A36C4621FCFF8048F160E0A7A35ADFF0B57D63BE63DF5AD94479A4684E440486863B49B4D2FE79A005E08D364CE89FFADF5DA12A7E14D1C3B303F283A1F3D4A0A36C4621FCFF8048F160E0A7A35ADFF0B57D63BE63DF5AD94479A4684E440486863B49B4D2FE79A00";
-        private static RNGCryptoServiceProvider rngCsp = new RNGCryptoServiceProvider(); // Use this instead of Random possibly...
+        private static RNGCryptoServiceProvider rngCsp = new RNGCryptoServiceProvider();
         private static Random random = new Random();
 
         static void Main(string[] args) {
+            privatekey = GenerateRandomCryptographicKey(384);
+            Console.WriteLine(privatekey.Length);
             String private_key2 = "";
             private_key2 += shaToString(sha512(privatekey));
             while (privatekey.Length != private_key2.Length)
@@ -157,6 +159,13 @@ namespace VernamModified {
               .Where(binary => !String.IsNullOrEmpty(binary))
               .Select(binary => Convert.ToByte(binary, 2))
               .ToArray());
+        }
+
+        static String GenerateRandomCryptographicKey(int keyLength) {
+            RNGCryptoServiceProvider rngCryptoServiceProvider = new RNGCryptoServiceProvider();
+            byte[] randomBytes = new byte[keyLength];
+            rngCryptoServiceProvider.GetBytes(randomBytes);
+            return Convert.ToBase64String(randomBytes);
         }
 
     }
