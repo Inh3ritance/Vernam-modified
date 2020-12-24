@@ -8,40 +8,42 @@ using System.Security.Cryptography;
 namespace VernamModified {
     class Program {
 
+        // Assume Key is generated with a good unguessable seed...
         private static String privatekey = "5E08D364CE89FFADF5DA12A7E14D1C3B303F283A1F3D4A0A36C4621FCFF8048F160E0A7A35ADFF0B57D63BE63DF5AD94479A4684E440486863B49B4D2FE79A005E08D364CE89FFADF5DA12A7E14D1C3B303F283A1F3D4A0A36C4621FCFF8048F160E0A7A35ADFF0B57D63BE63DF5AD94479A4684E440486863B49B4D2FE79A005E08D364CE89FFADF5DA12A7E14D1C3B303F283A1F3D4A0A36C4621FCFF8048F160E0A7A35ADFF0B57D63BE63DF5AD94479A4684E440486863B49B4D2FE79A005E08D364CE89FFADF5DA12A7E14D1C3B303F283A1F3D4A0A36C4621FCFF8048F160E0A7A35ADFF0B57D63BE63DF5AD94479A4684E440486863B49B4D2FE79A00";
-        private static RNGCryptoServiceProvider rngCsp = new RNGCryptoServiceProvider();
+        private static RNGCryptoServiceProvider rngCsp = new RNGCryptoServiceProvider(); // Use this instead of Random possibly...
         private static Random random = new Random();
 
         static void Main(string[] args) {
-            
-            //Prompt user String
+            String private_key2 = "";
+            private_key2 += shaToString(sha512(privatekey));
+            while (privatekey.Length != private_key2.Length)
+                private_key2 += shaToString(sha512(private_key2));
+            //Console.WriteLine(private_key2.Length);
+
+            // Prompt user String (Origianl message M1)
             Console.WriteLine("Vernam modified: Enter text to be encrypted.");
             string originalText = Console.ReadLine();
-            if(originalText.Length < 64) {
+            if(originalText.Length < 512 - 8) {
                 originalText += "/[EXT:";
-                int i = 0;
-                string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-                while (i < 64) {
+                string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"; // Prevent Hash Tables/Rainbows
+                while (originalText.Length < 512-2)
                     originalText += chars[random.Next(chars.Length)];
-                    i++;
-                }
                 originalText += "]/";
             }
-            Console.WriteLine("Your input: " + originalText);
+            //Console.WriteLine("Your input: " + originalText.Length);
+            String hash = shaToString(sha512(originalText));
+            //Console.WriteLine(hash);
 
-            // Append Hash with String, convert to bit array
-            Console.WriteLine("original String appended with hash");
-            byte[] data = sha512(originalText);
-            String hash = shaToString(data);
-            originalText += hash;
-            String hash_rep = hash;
-            while (originalText.Length < privatekey.Length) {
-                hash_rep = shaToString(sha512(hash_rep));
-                originalText += hash_rep;
+            // IV, does not need to be kept secret, for CBC
+            String IV = "";
+            while (IV.Length < 512) {
+                string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+                IV += chars[random.Next(chars.Length)];
             }
-            originalText = originalText.Substring(0, privatekey.Length);
-            //Console.WriteLine(originalText.Length);
-            //Console.WriteLine(privatekey.Length);
+            //Console.WriteLine("IV: " + IV)
+
+            /* Encryption */
+
             BitArray message = convertStringToBits(originalText);
             //Console.WriteLine(message.Length);
             //PrintBits(message);
@@ -52,58 +54,52 @@ namespace VernamModified {
             //Console.WriteLine(encryptedbits.Length);
             //PrintBits(encryptedbits);
 
-            // Xor privatekey and mesage
+            // Convert private key 2 to bit array
+            Console.WriteLine("private key 2");
+            BitArray encryptedbits2 = convertStringToBits(private_key2);
+            //Console.WriteLine(encryptedbits2.Length);
+            //PrintBits(encryptedbits2);
+
+            // Xor privatekey and message
             Console.WriteLine("data XOR w/private key");
             BitArray encr = message.Xor(encryptedbits);
             //Console.WriteLine(encr.Length);
             //PrintBits(encr);
 
-            // Decrypt encrypted message with XOR w/ priavte key
+            // Xor private key 2 and message
+            Console.WriteLine("data XOR w/private key 2");
+            encr = encr.Xor(encryptedbits2);
+            //Console.WriteLine(encr.Length);
+            //PrintBits(encr);
+
+            /* Encryption Done */
+
+            Console.WriteLine("Send: cipherText, MAC");
+
+            /* Decryption */
+
+            // Decrypt encrypted message with XOR w/ private key
             Console.WriteLine("Decrypting encryption");
             BitArray decr = encr.Xor(encryptedbits);
-            //Console.WriteLine(decr.Length);
-            //PrintBits(decr);
+            // Console.WriteLine(decr.Length);
+            // PrintBits(decr);
+
+            // Decrypt encrypted message with XOR w/ private key 2
+            Console.WriteLine("Decrypting encryption");
+            decr = encr.Xor(encryptedbits2);
+            // Console.WriteLine(decr.Length);
+            // PrintBits(decr);
+
+            /* Decryption Done */
 
             Console.WriteLine("Results:");
             String results = convertBitsToUTF8(decr);
-            while (true) {
-                if (results.Contains(hash)) {
-                    results = results.Replace(hash, "");
-                    hash = shaToString(sha512(hash));
-                } else if (true) {
-                    int i = 0;
-                    if (results.Length > 128) {
-                        string start,end = "";
-                        start = results.Substring(0, results.Length - 128);
-                        end = results.Substring(results.Length - 128, 128);
-                        while (i < 128) {
-                            bool rez = string.Equals(end.Substring(i, end.Length - i), (hash.Substring(0, hash.Length - i)));
-                            if (rez) {
-                                end = end.Substring(0,i);
-                                break;
-                            }
-                            i++;
-                        }
-                        results = start + end;
-                        break;
-                    } else {
-                        while (i < 128) {
-                            bool rez = string.Equals(results.Substring(i, results.Length - i), (hash.Substring(0, hash.Length - i)));
-                            if (rez) {
-                                results = results.Substring(0, i);
-                                break;
-                            }
-                            i++;
-                        }
-                        break;
-                    }
-                }
-            }
 
+
+            // Perform Regex
             string pattern = @"/\[EXT:.*\]/";
             Regex rep = new Regex(pattern);
             results = rep.Replace(results, "");
-
 
             Console.WriteLine(results);
         }
