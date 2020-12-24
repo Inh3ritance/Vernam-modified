@@ -11,3 +11,16 @@ C:\Users\marcos\Documents\GitHub\Vernam-modified\VernamModified\obj\Debug\netcor
 C:\Users\marcos\Documents\GitHub\Vernam-modified\VernamModified\obj\Debug\netcoreapp3.1\VernamModified.dll
 C:\Users\marcos\Documents\GitHub\Vernam-modified\VernamModified\obj\Debug\netcoreapp3.1\VernamModified.pdb
 C:\Users\marcos\Documents\GitHub\Vernam-modified\VernamModified\obj\Debug\netcoreapp3.1\VernamModified.genruntimeconfig.cache
+C:\Users\herre\Documents\GitHub\Vernam-modified\VernamModified\bin\Debug\netcoreapp3.1\VernamModified.exe
+C:\Users\herre\Documents\GitHub\Vernam-modified\VernamModified\bin\Debug\netcoreapp3.1\VernamModified.deps.json
+C:\Users\herre\Documents\GitHub\Vernam-modified\VernamModified\bin\Debug\netcoreapp3.1\VernamModified.runtimeconfig.json
+C:\Users\herre\Documents\GitHub\Vernam-modified\VernamModified\bin\Debug\netcoreapp3.1\VernamModified.runtimeconfig.dev.json
+C:\Users\herre\Documents\GitHub\Vernam-modified\VernamModified\bin\Debug\netcoreapp3.1\VernamModified.dll
+C:\Users\herre\Documents\GitHub\Vernam-modified\VernamModified\bin\Debug\netcoreapp3.1\VernamModified.pdb
+C:\Users\herre\Documents\GitHub\Vernam-modified\VernamModified\obj\Debug\netcoreapp3.1\VernamModified.csprojAssemblyReference.cache
+C:\Users\herre\Documents\GitHub\Vernam-modified\VernamModified\obj\Debug\netcoreapp3.1\VernamModified.AssemblyInfoInputs.cache
+C:\Users\herre\Documents\GitHub\Vernam-modified\VernamModified\obj\Debug\netcoreapp3.1\VernamModified.AssemblyInfo.cs
+C:\Users\herre\Documents\GitHub\Vernam-modified\VernamModified\obj\Debug\netcoreapp3.1\VernamModified.csproj.CoreCompileInputs.cache
+C:\Users\herre\Documents\GitHub\Vernam-modified\VernamModified\obj\Debug\netcoreapp3.1\VernamModified.dll
+C:\Users\herre\Documents\GitHub\Vernam-modified\VernamModified\obj\Debug\netcoreapp3.1\VernamModified.pdb
+C:\Users\herre\Documents\GitHub\Vernam-modified\VernamModified\obj\Debug\netcoreapp3.1\VernamModified.genruntimeconfig.cache

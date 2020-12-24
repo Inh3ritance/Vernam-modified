@@ -9,12 +9,24 @@ namespace VernamModified {
     class Program {
 
         private static String privatekey = "5E08D364CE89FFADF5DA12A7E14D1C3B303F283A1F3D4A0A36C4621FCFF8048F160E0A7A35ADFF0B57D63BE63DF5AD94479A4684E440486863B49B4D2FE79A005E08D364CE89FFADF5DA12A7E14D1C3B303F283A1F3D4A0A36C4621FCFF8048F160E0A7A35ADFF0B57D63BE63DF5AD94479A4684E440486863B49B4D2FE79A005E08D364CE89FFADF5DA12A7E14D1C3B303F283A1F3D4A0A36C4621FCFF8048F160E0A7A35ADFF0B57D63BE63DF5AD94479A4684E440486863B49B4D2FE79A005E08D364CE89FFADF5DA12A7E14D1C3B303F283A1F3D4A0A36C4621FCFF8048F160E0A7A35ADFF0B57D63BE63DF5AD94479A4684E440486863B49B4D2FE79A00";
+        private static RNGCryptoServiceProvider rngCsp = new RNGCryptoServiceProvider();
+        private static Random random = new Random();
 
         static void Main(string[] args) {
             
             //Prompt user String
             Console.WriteLine("Vernam modified: Enter text to be encrypted.");
             string originalText = Console.ReadLine();
+            if(originalText.Length < 64) {
+                originalText += "/[EXT:";
+                int i = 0;
+                string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+                while (i < 64) {
+                    originalText += chars[random.Next(chars.Length)];
+                    i++;
+                }
+                originalText += "]/";
+            }
             Console.WriteLine("Your input: " + originalText);
 
             // Append Hash with String, convert to bit array
@@ -87,6 +99,12 @@ namespace VernamModified {
                     }
                 }
             }
+
+            string pattern = @"/\[EXT:.*\]/";
+            Regex rep = new Regex(pattern);
+            results = rep.Replace(results, "");
+
+
             Console.WriteLine(results);
         }
 
