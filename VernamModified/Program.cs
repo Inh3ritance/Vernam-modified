@@ -8,102 +8,30 @@ using System.Security.Cryptography;
 namespace VernamModified {
     class Program {
 
-        // Assume Key is generated with a good unguessable seed...
-        private static String privatekey = "5E08D364CE89FFADF5DA12A7E14D1C3B303F283A1F3D4A0A36C4621FCFF8048F160E0A7A35ADFF0B57D63BE63DF5AD94479A4684E440486863B49B4D2FE79A005E08D364CE89FFADF5DA12A7E14D1C3B303F283A1F3D4A0A36C4621FCFF8048F160E0A7A35ADFF0B57D63BE63DF5AD94479A4684E440486863B49B4D2FE79A005E08D364CE89FFADF5DA12A7E14D1C3B303F283A1F3D4A0A36C4621FCFF8048F160E0A7A35ADFF0B57D63BE63DF5AD94479A4684E440486863B49B4D2FE79A005E08D364CE89FFADF5DA12A7E14D1C3B303F283A1F3D4A0A36C4621FCFF8048F160E0A7A35ADFF0B57D63BE63DF5AD94479A4684E440486863B49B4D2FE79A00";
-        private static RNGCryptoServiceProvider rngCsp = new RNGCryptoServiceProvider();
+        private static String privatekey;
+        private static String client;
         private static Random random = new Random();
 
         static void Main(string[] args) {
-            privatekey = GenerateRandomCryptographicKey(384);
-            Console.WriteLine(privatekey.Length);
-            String private_key2 = "";
-            private_key2 += shaToString(sha512(privatekey));
-            while (privatekey.Length != private_key2.Length)
-                private_key2 += shaToString(sha512(private_key2));
-            //Console.WriteLine(private_key2.Length);
 
-            // Prompt user String (Origianl message M1)
-            Console.WriteLine("Vernam modified: Enter text to be encrypted.");
-            string originalText = Console.ReadLine();
-            if(originalText.Length < 512 - 8) {
-                originalText += "/[EXT:";
-                string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"; // Prevent Hash Tables/Rainbows
-                while (originalText.Length < 512-2)
-                    originalText += chars[random.Next(chars.Length)];
-                originalText += "]/";
-            }
-            //Console.WriteLine("Your input: " + originalText.Length);
-            String hash = shaToString(sha512(originalText));
-            //Console.WriteLine(hash);
+            //ASK if client A or B
+            Console.WriteLine("Are you client A or B (A/B)");
+            if (Console.ReadLine().Equals("A"))
+                client = "ClientA";
+            else
+                client = "ClientB";
+          
+            // Recieved from RSA intially, store locally after initializing key
+            retrieveKeyFromFile();
+            // Generate 2nd private key from 1st private key
+            String private_key2 = gen2ndKey();
 
-            // IV, does not need to be kept secret, for CBC
-            String IV = "";
-            while (IV.Length < 512) {
-                string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-                IV += chars[random.Next(chars.Length)];
-            }
-            //Console.WriteLine("IV: " + IV)
-
-            /* Encryption */
-
-            BitArray message = convertStringToBits(originalText);
-            //Console.WriteLine(message.Length);
-            //PrintBits(message);
-
-            // Convert private key to bit array
-            Console.WriteLine("private key");
-            BitArray encryptedbits = convertStringToBits(privatekey);
-            //Console.WriteLine(encryptedbits.Length);
-            //PrintBits(encryptedbits);
-
-            // Convert private key 2 to bit array
-            Console.WriteLine("private key 2");
-            BitArray encryptedbits2 = convertStringToBits(private_key2);
-            //Console.WriteLine(encryptedbits2.Length);
-            //PrintBits(encryptedbits2);
-
-            // Xor privatekey and message
-            Console.WriteLine("data XOR w/private key");
-            BitArray encr = message.Xor(encryptedbits);
-            //Console.WriteLine(encr.Length);
-            //PrintBits(encr);
-
-            // Xor private key 2 and message
-            Console.WriteLine("data XOR w/private key 2");
-            encr = encr.Xor(encryptedbits2);
-            //Console.WriteLine(encr.Length);
-            //PrintBits(encr);
-
-            /* Encryption Done */
-
-            Console.WriteLine("Send: cipherText, MAC");
-
-            /* Decryption */
-
-            // Decrypt encrypted message with XOR w/ private key
-            Console.WriteLine("Decrypting encryption");
-            BitArray decr = encr.Xor(encryptedbits);
-            // Console.WriteLine(decr.Length);
-            // PrintBits(decr);
-
-            // Decrypt encrypted message with XOR w/ private key 2
-            Console.WriteLine("Decrypting encryption");
-            decr = encr.Xor(encryptedbits2);
-            // Console.WriteLine(decr.Length);
-            // PrintBits(decr);
-
-            /* Decryption Done */
-
-            Console.WriteLine("Results:");
-            String results = convertBitsToUTF8(decr);
-
-
-            // Perform Regex
-            string pattern = @"/\[EXT:.*\]/";
-            Regex rep = new Regex(pattern);
-            results = rep.Replace(results, "");
-
-            Console.WriteLine(results);
+            //Ask user to Encrypt or Decrypt
+            Console.WriteLine("Encrypt/Decrypt");
+            if(Console.ReadLine().Equals("E"))
+                Encryption(privatekey,private_key2);
+            else
+                Decryption(privatekey, private_key2);
         }
 
         static byte[] sha512(String str) {
@@ -168,5 +96,145 @@ namespace VernamModified {
             return Convert.ToBase64String(randomBytes);
         }
 
+        static void retrieveKeyFromFile(){
+            if (System.IO.File.ReadAllText(@"C:\Users\marcos\Documents\GitHub\Vernam-modified\" + client + "\\private.key") == null) {
+                privatekey = GenerateRandomCryptographicKey(384);
+                System.IO.File.WriteAllText(@"C:\Users\marcos\Documents\GitHub\Vernam-modified\" + client + "\\private.key", privatekey);
+            } else {
+                privatekey = System.IO.File.ReadAllText(@"C:\Users\marcos\Documents\GitHub\Vernam-modified\" + client + "\\private.key");
+            }
+        }
+
+        static String gen2ndKey() {
+            String str = shaToString(sha512(privatekey));
+            while (privatekey.Length != str.Length)
+                str += shaToString(sha512(str));
+            return str;
+        }
+
+        static String conformOriginalText(){
+            String str = Console.ReadLine();
+            if (str.Length < 512 - 8) {
+                str += "/[EXT:";
+                string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"; // Prevent Hash Tables/Rainbows
+                while (str.Length < 512 - 2)
+                    str += chars[random.Next(chars.Length)];
+                str += "]/";
+            }
+            return str;
+        }
+
+        static void Encryption(String privatekey, String private_key2) {
+
+            // Prompt user M1
+            Console.WriteLine("Vernam modified: Enter text to be encrypted.");
+            String originalText = conformOriginalText();
+
+            // Convert M1 to bits 
+            Console.WriteLine("Original Text");
+            BitArray message = convertStringToBits(originalText);
+
+            // Convert private key to bit array
+            Console.WriteLine("private key");
+            BitArray e1 = convertStringToBits(privatekey);
+
+            // Convert private key 2 to bit array
+            Console.WriteLine("private key 2");
+            BitArray e2 = convertStringToBits(private_key2);
+
+            // Xor privatekey and message
+            Console.WriteLine("data XOR w/private key");
+            BitArray c1 = message.Xor(e1);
+
+            // Xor private key 2 and message
+            Console.WriteLine("data XOR w/private key 2");
+            c1 = c1.Xor(e2);
+
+            String CipherText = convertBitsToUTF8(c1);
+
+            // Hash Cipher Text
+            String hash = shaToString(sha512(CipherText));
+
+            // Generate new Key, convert to bits and Xor privatekey
+            String gen_new_key = GenerateRandomCryptographicKey(384);
+            BitArray new_key_bits = convertStringToBits(gen_new_key);
+            String new_key = convertBitsToUTF8(new_key_bits.Xor(e1));
+
+            // Replace current key with new key
+            privatekey = new_key;
+            System.IO.File.WriteAllText(@"C:\Users\marcos\Documents\GitHub\Vernam-modified\" + client + "\\private.key", privatekey);
+
+            // Hash new key
+            String hashkey = shaToString(sha512(new_key));
+
+            Send(CipherText, hash,new_key,hashkey);
+        }
+
+        // Will replace with TCP
+        static void Send(String CipherText, String hash, String new_key, String hashkey) {
+            System.IO.File.WriteAllText(@"C:\Users\marcos\Documents\GitHub\Vernam-modified\Data\CipherText.txt", CipherText);
+            System.IO.File.WriteAllText(@"C:\Users\marcos\Documents\GitHub\Vernam-modified\Data\CipherHash.txt", hash);
+            System.IO.File.WriteAllText(@"C:\Users\marcos\Documents\GitHub\Vernam-modified\Data\NewKey.key", new_key);
+            System.IO.File.WriteAllText(@"C:\Users\marcos\Documents\GitHub\Vernam-modified\Data\HashKey.txt", hashkey);
+        }
+
+        static void Decryption(String privateKey, String privateKey2) {
+
+            String[] str = Read();
+            String cipherText = str[0];
+            String hash = str[1];
+            String new_key = str[2];
+            String hashKey = str[3];
+
+            // Check for tampering, need to think about this more
+            if (!shaToString(sha512(new_key)).Equals(hashKey)) {
+                Console.WriteLine("There has been tampering with the hash or key, replace key with new one for authority RSA");
+                return;
+            } else if(!shaToString(sha512(cipherText)).Equals(hash)) {
+                Console.WriteLine("There has been tampering with the ciphertext or the cipher hash, update key from ney key and ask to resend the message");
+            }
+
+            // If everything is good, setup
+            BitArray e1 = convertStringToBits(privateKey);
+            BitArray e2 = convertStringToBits(privateKey2);
+            BitArray cipherBits = convertStringToBits(cipherText);
+
+            // Decrypt encrypted message with XOR w/ private key
+            Console.WriteLine("Decrypting encryption");
+            BitArray decr = cipherBits.Xor(e1);
+
+            // Decrypt encrypted message with XOR w/ private key 2
+            Console.WriteLine("Decrypting encryption");
+            decr = decr.Xor(e2);
+
+            // get results
+            Console.WriteLine("Results:");
+            String results = convertBitsToUTF8(decr);
+
+            // Perform Regex
+            string pattern = @"/\[EXT:.*\]/";
+            Regex rep = new Regex(pattern);
+            results = rep.Replace(results, "");
+
+            // Display results
+            Console.WriteLine(results);
+
+            // Update Key
+            BitArray new_key_bits = convertStringToBits(new_key);
+            String update_key = convertBitsToUTF8(new_key_bits.Xor(e1));
+
+            // Replace current key with new key
+            privatekey = update_key;
+            System.IO.File.WriteAllText(@"C:\Users\marcos\Documents\GitHub\Vernam-modified\" + client + "\\private.key", privatekey);
+        }
+
+        static String[] Read() {
+            String[] str = new String[4];
+            str[0] = System.IO.File.ReadAllText(@"C:\Users\marcos\Documents\GitHub\Vernam-modified\Data\CipherText.txt");
+            str[1] = System.IO.File.ReadAllText(@"C:\Users\marcos\Documents\GitHub\Vernam-modified\Data\CipherHash.txt");
+            str[2] = System.IO.File.ReadAllText(@"C:\Users\marcos\Documents\GitHub\Vernam-modified\Data\NewKey.key");
+            str[3] = System.IO.File.ReadAllText(@"C:\Users\marcos\Documents\GitHub\Vernam-modified\Data\HashKey.txt");
+            return str;
+        }
     }
 }
