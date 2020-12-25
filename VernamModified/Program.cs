@@ -10,7 +10,6 @@ namespace VernamModified {
 
         private static String privatekey;
         private static String client;
-        private static Random random = new Random();
 
         static void Main(string[] args) {
 
@@ -27,11 +26,22 @@ namespace VernamModified {
             String private_key2 = gen2ndKey();
 
             //Ask user to Encrypt or Decrypt
-            Console.WriteLine("Encrypt/Decrypt");
-            if(Console.ReadLine().Equals("E"))
-                Encryption(privatekey,private_key2);
-            else
-                Decryption(privatekey, private_key2);
+            Console.WriteLine("Encrypt/Decrypt(E/D)");
+            if (Console.ReadLine().Equals("E")) {
+                Console.WriteLine("Text or File(T/F)");
+                if (Console.ReadLine().Equals("T"))
+                    Encryption(privatekey, private_key2);
+                else
+                    Console.WriteLine("CBC Encryption");
+            } else {
+                Console.WriteLine("Encrypt/Decrypt(E/D)");
+                if (false /* check if image is present for decryption */) {
+                    Console.WriteLine("soon");
+                } else {
+                    Decryption(privatekey, private_key2);
+                }
+            }
+               
         }
 
         static byte[] sha512(String str) {
@@ -114,6 +124,7 @@ namespace VernamModified {
         }
 
         static String conformOriginalText(){
+            Random random = new Random();
             String str = Console.ReadLine();
             if (str.Length < 512 - 8) {
                 str += "/[EXT:";
@@ -200,7 +211,7 @@ namespace VernamModified {
             Console.WriteLine("Decrypting encryption");
             decr = decr.Xor(e2);
 
-            // get results
+            // Get results
             Console.WriteLine("Results:");
             String results = convertBitsToUTF8(decr);
 
