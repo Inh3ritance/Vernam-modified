@@ -97,9 +97,10 @@ namespace VernamModified {
         }
 
         static void retrieveKeyFromFile(){
-            if (System.IO.File.ReadAllText(@"C:\Users\marcos\Documents\GitHub\Vernam-modified\" + client + "\\private.key") == null) {
+            if (System.IO.File.ReadAllText(@"C:\Users\marcos\Documents\GitHub\Vernam-modified\" + client + "\\private.key").Length == 0) {
                 privatekey = GenerateRandomCryptographicKey(384);
                 System.IO.File.WriteAllText(@"C:\Users\marcos\Documents\GitHub\Vernam-modified\" + client + "\\private.key", privatekey);
+                // Share with RSA
             } else {
                 privatekey = System.IO.File.ReadAllText(@"C:\Users\marcos\Documents\GitHub\Vernam-modified\" + client + "\\private.key");
             }
@@ -161,8 +162,7 @@ namespace VernamModified {
             String new_key = convertBitsToUTF8(new_key_bits.Xor(e1));
 
             // Replace current key with new key
-            privatekey = new_key;
-            System.IO.File.WriteAllText(@"C:\Users\marcos\Documents\GitHub\Vernam-modified\" + client + "\\private.key", privatekey);
+            System.IO.File.WriteAllText(@"C:\Users\marcos\Documents\GitHub\Vernam-modified\" + client + "\\private.key", gen_new_key);
 
             // Hash new key
             String hashkey = shaToString(sha512(new_key));
@@ -220,6 +220,7 @@ namespace VernamModified {
             Console.WriteLine(results);
 
             // Update Key
+            Console.WriteLine(new_key);
             BitArray new_key_bits = convertStringToBits(new_key);
             String update_key = convertBitsToUTF8(new_key_bits.Xor(e1));
 
@@ -232,7 +233,7 @@ namespace VernamModified {
             String[] str = new String[4];
             str[0] = System.IO.File.ReadAllText(@"C:\Users\marcos\Documents\GitHub\Vernam-modified\Data\CipherText.txt");
             str[1] = System.IO.File.ReadAllText(@"C:\Users\marcos\Documents\GitHub\Vernam-modified\Data\CipherHash.txt");
-            str[2] = System.IO.File.ReadAllText(@"C:\Users\marcos\Documents\GitHub\Vernam-modified\Data\NewKey.key");
+            str[2] = System.Text.Encoding.UTF8.GetString(System.IO.File.ReadAllBytes(@"C:\Users\marcos\Documents\GitHub\Vernam-modified\Data\NewKey.key"));
             str[3] = System.IO.File.ReadAllText(@"C:\Users\marcos\Documents\GitHub\Vernam-modified\Data\HashKey.txt");
             return str;
         }
