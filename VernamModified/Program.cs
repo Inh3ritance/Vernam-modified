@@ -218,9 +218,7 @@ namespace VernamModified {
 
             // Display results
             Console.WriteLine(results);
-
             // Update Key
-            Console.WriteLine(new_key);
             BitArray new_key_bits = convertStringToBits(new_key);
             String update_key = convertBitsToUTF8(new_key_bits.Xor(e1));
 
