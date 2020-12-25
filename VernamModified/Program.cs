@@ -131,6 +131,9 @@ namespace VernamModified {
             Console.WriteLine("Vernam modified: Enter text to be encrypted.");
             String originalText = conformOriginalText();
 
+            // Hash Original Text
+            String hash = shaToString(sha512(originalText));
+
             // Convert M1 to bits 
             Console.WriteLine("Original Text");
             BitArray message = convertStringToBits(originalText);
@@ -151,23 +154,21 @@ namespace VernamModified {
             Console.WriteLine("data XOR w/private key 2");
             c1 = c1.Xor(e2);
 
+            // Get Cipher text
             String CipherText = convertBitsToUTF8(c1);
-
-            // Hash Cipher Text
-            String hash = shaToString(sha512(CipherText));
 
             // Generate new Key, convert to bits and Xor privatekey
             String gen_new_key = GenerateRandomCryptographicKey(384);
             BitArray new_key_bits = convertStringToBits(gen_new_key);
             String new_key = convertBitsToUTF8(new_key_bits.Xor(e1));
 
+            // Hash new key
+            String hashkey = shaToString(sha512(gen_new_key));
+
             // Replace current key with new key
             System.IO.File.WriteAllText(@"C:\Users\marcos\Documents\GitHub\Vernam-modified\" + client + "\\private.key", gen_new_key);
 
-            // Hash new key
-            String hashkey = shaToString(sha512(new_key));
-
-            Send(CipherText, hash,new_key,hashkey);
+            Send(CipherText, hash, new_key, hashkey);
         }
 
         // Will replace with TCP
@@ -186,14 +187,6 @@ namespace VernamModified {
             String new_key = str[2];
             String hashKey = str[3];
 
-            // Check for tampering, need to think about this more
-            if (!shaToString(sha512(new_key)).Equals(hashKey)) {
-                Console.WriteLine("There has been tampering with the hash or key, replace key with new one for authority RSA");
-                return;
-            } else if(!shaToString(sha512(cipherText)).Equals(hash)) {
-                Console.WriteLine("There has been tampering with the ciphertext or the cipher hash, update key from ney key and ask to resend the message");
-            }
-
             // If everything is good, setup
             BitArray e1 = convertStringToBits(privateKey);
             BitArray e2 = convertStringToBits(privateKey2);
@@ -211,6 +204,18 @@ namespace VernamModified {
             Console.WriteLine("Results:");
             String results = convertBitsToUTF8(decr);
 
+            // Update Key
+            BitArray new_key_bits = convertStringToBits(new_key);
+            String update_key = convertBitsToUTF8(new_key_bits.Xor(e1));
+
+            // Check for tampering
+            if (!shaToString(sha512(update_key)).Equals(hashKey)){
+                Console.WriteLine("There has been tampering with the hash or key, replace key with new one from authority RSA");
+                return;
+            } else if (!shaToString(sha512(results)).Equals(hash)) {
+                Console.WriteLine("There has been tampering with the ciphertext or the cipher hash, update key from new key and ask to resend the message");
+            }
+
             // Perform Regex
             string pattern = @"/\[EXT:.*\]/";
             Regex rep = new Regex(pattern);
@@ -218,13 +223,9 @@ namespace VernamModified {
 
             // Display results
             Console.WriteLine(results);
-            // Update Key
-            BitArray new_key_bits = convertStringToBits(new_key);
-            String update_key = convertBitsToUTF8(new_key_bits.Xor(e1));
 
             // Replace current key with new key
-            privatekey = update_key;
-            System.IO.File.WriteAllText(@"C:\Users\marcos\Documents\GitHub\Vernam-modified\" + client + "\\private.key", privatekey);
+            System.IO.File.WriteAllText(@"C:\Users\marcos\Documents\GitHub\Vernam-modified\" + client + "\\private.key", update_key);
         }
 
         static String[] Read() {
