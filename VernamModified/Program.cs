@@ -157,13 +157,9 @@ namespace VernamModified {
             Console.WriteLine("private key 2");
             BitArray e2 = convertStringToBits(private_key2);
 
-            // Xor privatekey and message
-            Console.WriteLine("data XOR w/private key");
-            BitArray c1 = message.Xor(e1);
-
             // Xor private key 2 and message
             Console.WriteLine("data XOR w/private key 2");
-            c1 = c1.Xor(e2);
+            BitArray c1 = message.Xor(e2);
 
             // Get Cipher text
             String CipherText = convertBitsToUTF8(c1);
@@ -205,11 +201,7 @@ namespace VernamModified {
 
             // Decrypt encrypted message with XOR w/ private key
             Console.WriteLine("Decrypting encryption");
-            BitArray decr = cipherBits.Xor(e1);
-
-            // Decrypt encrypted message with XOR w/ private key 2
-            Console.WriteLine("Decrypting encryption");
-            decr = decr.Xor(e2);
+            BitArray decr = cipherBits.Xor(e2);
 
             // Get results
             Console.WriteLine("Results:");
