@@ -2,18 +2,27 @@
 using System.IO;
 using System.Text;
 using System.Linq;
+using System.Net;
+using System.Threading;
+using System.Net.Sockets;
 using System.Text.RegularExpressions;
 using System.Collections;
 using System.Security.Cryptography;
 
 namespace VernamModified {
-    class Program {
 
+    // State object for receiving data from remote device.  
+    public class StateObject {
+        public Socket workSocket = null;
+        public const int BufferSize = 1024;
+        public byte[] buffer = new byte[BufferSize];  
+        public StringBuilder sb = new StringBuilder();
+    }
+
+    class Program {
         private static String privatekey;
         private static String client;
-
         static void Main(string[] args) {
-
             //ASK if client A or B
             Console.WriteLine("Are you client A or B (A/B)");
             if (Console.ReadLine().Equals("A"))
