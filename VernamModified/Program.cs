@@ -11,7 +11,7 @@ using System.Security.Cryptography;
 
 namespace VernamModified {
 
-    // State object for receiving data from remote device.  
+    // State object for receiving data from remote device
     public class StateObject {
         public Socket workSocket = null;
         public const int BufferSize = 1024;
@@ -20,9 +20,22 @@ namespace VernamModified {
     }
 
     class Program {
+
+        private static int counter;
         private static String privatekey;
         private static String client;
+
+        // ManualResetEvent instances signal completion.  
+        private static ManualResetEvent connectDone = new ManualResetEvent(false);
+        private static ManualResetEvent sendDone = new ManualResetEvent(false);
+        private static ManualResetEvent receiveDone = new ManualResetEvent(false);
+        private static String response = String.Empty;
+
         static void Main(string[] args) {
+
+            StartClient();
+
+            counter++;
             //ASK if client A or B
             Console.WriteLine("Are you client A or B (A/B)");
             if (Console.ReadLine().Equals("A"))
@@ -50,7 +63,6 @@ namespace VernamModified {
                 else
                     DecrCBC(privatekey, private_key2);
             }
-               
         }
 
         static byte[] sha512(String str) {
@@ -370,5 +382,105 @@ namespace VernamModified {
             // Replace current key with new key
             System.IO.File.WriteAllText(@"C:\Users\marcos\Documents\GitHub\Vernam-modified\" + client + "\\private.key", update_key);
         }
+
+        /* Start of TCP functions */
+
+        private static void StartClient() {
+            // Connect to a remote device.  
+            try { 
+                IPHostEntry ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
+                IPAddress ipAddressA = ipHostInfo.AddressList[0];
+                IPEndPoint remoteEPA = new IPEndPoint(ipAddressA, 11000);
+                IPAddress ipAddressB = ipHostInfo.AddressList[1];
+                IPEndPoint remoteEPB = new IPEndPoint(ipAddressB, 11000);
+
+                // Create a TCP/IP socket.  
+                Socket clientA = new Socket(ipAddressA.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                Socket clientB = new Socket(ipAddressB.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+
+                // Connect to the remote endpoint.  
+                clientA.BeginConnect(remoteEPA, new AsyncCallback(ConnectCallback), clientA);
+                connectDone.WaitOne();
+                clientB.BeginConnect(remoteEPB, new AsyncCallback(ConnectCallback), clientB);
+                connectDone.WaitOne();
+
+                // Send test data to the remote device.  
+                Send(clientA, "This is a test<EOF>");
+                sendDone.WaitOne();
+
+                // Receive the response from the remote device.  
+                Receive(clientB);
+                receiveDone.WaitOne();
+
+                // Write the response to the console.  
+                Console.WriteLine("Response received : {0}", response);
+
+                // Release the socket.  
+                clientA.Shutdown(SocketShutdown.Both);
+                clientA.Close();
+                clientB.Shutdown(SocketShutdown.Both);
+                clientB.Close();
+            } catch (Exception e) {
+                Console.WriteLine(e.ToString());
+            }
+        }
+
+        private static void ConnectCallback(IAsyncResult ar) {
+            try {
+                Socket client = (Socket)ar.AsyncState;  
+                client.EndConnect(ar);
+                Console.WriteLine("Socket connected to {0}", client.RemoteEndPoint.ToString());
+                connectDone.Set();
+            } catch (Exception e) {
+                Console.WriteLine(e.ToString());
+            }
+        }
+
+        private static void Receive(Socket client) {
+            try { 
+                StateObject state = new StateObject();
+                state.workSocket = client;  
+                client.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0, new AsyncCallback(ReceiveCallback), state);
+            } catch (Exception e) {
+                Console.WriteLine(e.ToString());
+            }
+        }
+
+        private static void ReceiveCallback(IAsyncResult ar) {
+            try {
+                StateObject state = (StateObject)ar.AsyncState;
+                Socket client = state.workSocket;
+                int bytesRead = client.EndReceive(ar);
+                if (bytesRead > 0) { 
+                    state.sb.Append(Encoding.ASCII.GetString(state.buffer, 0, bytesRead));  
+                    client.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0, new AsyncCallback(ReceiveCallback), state);
+                } else {
+                    if (state.sb.Length > 1)
+                        response = state.sb.ToString();  
+                    receiveDone.Set();
+                }
+            } catch (Exception e) {
+                Console.WriteLine(e.ToString());
+            }
+        }
+
+        private static void Send(Socket client, String data) {
+            byte[] byteData = Encoding.ASCII.GetBytes(data);
+            client.BeginSend(byteData, 0, byteData.Length, 0, new AsyncCallback(SendCallback), client);
+        }
+
+        private static void SendCallback(IAsyncResult ar) {
+            try {
+                Socket client = (Socket)ar.AsyncState; 
+                int bytesSent = client.EndSend(ar);
+                Console.WriteLine("Sent {0} bytes to server.", bytesSent);
+                sendDone.Set();
+            } catch (Exception e) {
+                Console.WriteLine(e.ToString());
+            }
+        }
+
+        /* End of TCP functions*/
+
     }
 }

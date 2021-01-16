@@ -15,26 +15,26 @@ namespace VernamModifedServer {
 
     public class AsynchronousSocketListener {
         public static ManualResetEvent allDone = new ManualResetEvent(false);
-
         public static void StartListening() {
             IPHostEntry ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
-            IPAddress ipAddress = ipHostInfo.AddressList[0];
-            IPEndPoint localEndPoint = new IPEndPoint(ipAddress, 11000);
-            Socket listener = new Socket(ipAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-
-            // Bind the socket to the local endpoint and listen for incoming connections.  
+            IPAddress ipAddressA = ipHostInfo.AddressList[0];
+            IPEndPoint localEndPointA = new IPEndPoint(ipAddressA, 11000);
+            IPAddress ipAddressB = ipHostInfo.AddressList[1];
+            IPEndPoint localEndPointB = new IPEndPoint(ipAddressB, 11000);
+            Socket listenerA = new Socket(ipAddressA.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+            Socket listenerB = new Socket(ipAddressB.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
             try {
-                listener.Bind(localEndPoint);
-                listener.Listen(100);
+                listenerA.Bind(localEndPointA);
+                listenerA.Listen(1);
+                listenerB.Bind(localEndPointB);
+                listenerB.Listen(1);
                 while (true) {
                     // Set the event to nonsignaled state.  
                     allDone.Reset();
-
                     // Start an asynchronous socket to listen for connections.  
                     Console.WriteLine("Waiting for a connection...");
-                    listener.BeginAccept(new AsyncCallback(AcceptCallback),listener);
-
-                    // Wait until a connection is made before continuing.  
+                    listenerA.BeginAccept(new AsyncCallback(AcceptCallback),listenerA);
+                    // Wait until a connection is made before continuing.
                     allDone.WaitOne();
                 }
             } catch (Exception e) {
@@ -47,8 +47,7 @@ namespace VernamModifedServer {
             allDone.Set();
             // Get the socket that handles the client request.  
             Socket listener = (Socket)ar.AsyncState;
-            Socket handler = listener.EndAccept(ar);
-            // Create the state object.  
+            Socket handler = listener.EndAccept(ar); 
             StateObject state = new StateObject();
             state.workSocket = handler;
             handler.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0, new AsyncCallback(ReadCallback), state);
@@ -56,28 +55,22 @@ namespace VernamModifedServer {
 
         public static void ReadCallback(IAsyncResult ar) {
             String content = String.Empty;
-
-            // Retrieve the state object and the handler socket  
             StateObject state = (StateObject)ar.AsyncState;
             Socket handler = state.workSocket;
-
             // Read data from the client socket.
             int bytesRead = handler.EndReceive(ar);
-
             if (bytesRead > 0) {
                 // There  might be more data, so store the data received so far.  
                 state.sb.Append(Encoding.ASCII.GetString(state.buffer, 0, bytesRead));
                 content = state.sb.ToString();
                 if (content.IndexOf("<EOF>") > -1) {
-                    // All the data has been read from the
-                    // client. Display it on the console.  
+                    // All the data has been read from the client. Display it on the console.
                     Console.WriteLine("Read {0} bytes from socket. \n Data : {1}", content.Length, content);
                     // Echo the data back to the client.  
                     Send(handler, content);
                 } else {
                     // Not all data received. Get more.  
-                    handler.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0,
-                    new AsyncCallback(ReadCallback), state);
+                    handler.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0, new AsyncCallback(ReadCallback), state);
                 }
             }
         }
@@ -103,9 +96,8 @@ namespace VernamModifedServer {
             }
         }
 
-        public static int Main(String[] args) {
+        public static void Main() {
             StartListening();
-            return 0;
         }
     }
 }
