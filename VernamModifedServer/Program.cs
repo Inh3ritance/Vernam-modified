@@ -19,15 +19,10 @@ namespace VernamModifedServer {
             IPHostEntry ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
             IPAddress ipAddressA = ipHostInfo.AddressList[0];
             IPEndPoint localEndPointA = new IPEndPoint(ipAddressA, 11000);
-            IPAddress ipAddressB = ipHostInfo.AddressList[1];
-            IPEndPoint localEndPointB = new IPEndPoint(ipAddressB, 11000);
             Socket listenerA = new Socket(ipAddressA.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-            Socket listenerB = new Socket(ipAddressB.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
             try {
                 listenerA.Bind(localEndPointA);
                 listenerA.Listen(1);
-                listenerB.Bind(localEndPointB);
-                listenerB.Listen(1);
                 while (true) {
                     // Set the event to nonsignaled state.  
                     allDone.Reset();
@@ -65,7 +60,7 @@ namespace VernamModifedServer {
                 content = state.sb.ToString();
                 if (content.IndexOf("<EOF>") > -1) {
                     // All the data has been read from the client. Display it on the console.
-                    Console.WriteLine("Read {0} bytes from socket. \n Data : {1}", content.Length, content);
+                    Console.WriteLine("Read {0} bytes from socket. \n Data : {1}", content.Length, "Data: " + content);
                     // Echo the data back to the client.  
                     Send(handler, content);
                 } else {

@@ -21,7 +21,6 @@ namespace VernamModified {
 
     class Program {
 
-        private static int counter;
         private static String privatekey;
         private static String client;
 
@@ -29,13 +28,10 @@ namespace VernamModified {
         private static ManualResetEvent connectDone = new ManualResetEvent(false);
         private static ManualResetEvent sendDone = new ManualResetEvent(false);
         private static ManualResetEvent receiveDone = new ManualResetEvent(false);
-        private static String response = String.Empty;
+        private static String response;
 
         static void Main(string[] args) {
 
-            StartClient();
-
-            counter++;
             //ASK if client A or B
             Console.WriteLine("Are you client A or B (A/B)");
             if (Console.ReadLine().Equals("A"))
@@ -48,18 +44,26 @@ namespace VernamModified {
             // Generate 2nd private key from 1st private key
             String private_key2 = gen2ndKey();
 
+            // Ask if local or echoe server
+            bool local = false;
+            Console.WriteLine("Local?(Y/N)");
+            if (Console.ReadLine().Equals("Y"))
+                local = true;
+            else
+                local = false;
+
             //Ask user to Encrypt or Decrypt
             Console.WriteLine("Encrypt/Decrypt(E/D)");
             if (Console.ReadLine().Equals("E")) {
                 Console.WriteLine("Text or File(T/F)");
                 if (Console.ReadLine().Equals("T"))
-                    Encryption(privatekey, private_key2);
+                    Encryption(privatekey, private_key2, local);
                 else
                     EncrCBC(privatekey, private_key2);
             } else {
                 Console.WriteLine("Text/File(T/F)");
                 if (Console.ReadLine().Equals("T"))
-                    Decryption(privatekey, private_key2);
+                    Decryption(privatekey, private_key2, local);
                 else
                     DecrCBC(privatekey, private_key2);
             }
@@ -131,7 +135,6 @@ namespace VernamModified {
             if (System.IO.File.ReadAllText(@"C:\Users\marcos\Documents\GitHub\Vernam-modified\" + client + "\\private.key").Length == 0) {
                 privatekey = GenerateRandomCryptographicKey(384);
                 System.IO.File.WriteAllText(@"C:\Users\marcos\Documents\GitHub\Vernam-modified\" + client + "\\private.key", privatekey);
-                // Share with RSA
             } else {
                 privatekey = System.IO.File.ReadAllText(@"C:\Users\marcos\Documents\GitHub\Vernam-modified\" + client + "\\private.key");
             }
@@ -176,7 +179,7 @@ namespace VernamModified {
             return str;
         }
 
-        static void Encryption(String privatekey, String private_key2) {
+        static void Encryption(String privatekey, String private_key2, bool local) {
 
             // Prompt user M1
             Console.WriteLine("Vernam modified: Enter text to be encrypted.");
@@ -215,10 +218,19 @@ namespace VernamModified {
             // Replace current key with new key
             System.IO.File.WriteAllText(@"C:\Users\marcos\Documents\GitHub\Vernam-modified\" + client + "\\private.key", gen_new_key);
 
-            Send(CipherText, hash, new_key, hashkey);
+            String[] data = new String[4];
+            data[0] = CipherText;
+            data[1] = hash;
+            data[2] = new_key;
+            data[3] = hashkey;
+            if (local){
+                Send(CipherText, hash, new_key, hashkey);
+            } else {
+                StartClient("send", data);
+            }
+            
         }
 
-        // Will replace with TCP
         static void Send(String CipherText, String hash, String new_key, String hashkey) {
             System.IO.File.WriteAllText(@"C:\Users\marcos\Documents\GitHub\Vernam-modified\Data\CipherText.txt", CipherText);
             System.IO.File.WriteAllText(@"C:\Users\marcos\Documents\GitHub\Vernam-modified\Data\CipherHash.txt", hash);
@@ -226,7 +238,7 @@ namespace VernamModified {
             System.IO.File.WriteAllText(@"C:\Users\marcos\Documents\GitHub\Vernam-modified\Data\HashKey.txt", hashkey);
         }
 
-        static void Decryption(String privateKey, String privateKey2) {
+        static void Decryption(String privateKey, String privateKey2, bool local) {
 
             String[] str = Read();
             String cipherText = str[0];
@@ -384,45 +396,29 @@ namespace VernamModified {
         }
 
         /* Start of TCP functions */
-
-        private static void StartClient() {
-            // Connect to a remote device.  
-            try { 
-                IPHostEntry ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
-                IPAddress ipAddressA = ipHostInfo.AddressList[0];
-                IPEndPoint remoteEPA = new IPEndPoint(ipAddressA, 11000);
-                IPAddress ipAddressB = ipHostInfo.AddressList[1];
-                IPEndPoint remoteEPB = new IPEndPoint(ipAddressB, 11000);
-
-                // Create a TCP/IP socket.  
-                Socket clientA = new Socket(ipAddressA.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-                Socket clientB = new Socket(ipAddressB.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-
-                // Connect to the remote endpoint.  
-                clientA.BeginConnect(remoteEPA, new AsyncCallback(ConnectCallback), clientA);
-                connectDone.WaitOne();
-                clientB.BeginConnect(remoteEPB, new AsyncCallback(ConnectCallback), clientB);
-                connectDone.WaitOne();
-
-                // Send test data to the remote device.  
-                Send(clientA, "This is a test<EOF>");
-                sendDone.WaitOne();
-
-                // Receive the response from the remote device.  
-                Receive(clientB);
-                receiveDone.WaitOne();
-
-                // Write the response to the console.  
-                Console.WriteLine("Response received : {0}", response);
-
-                // Release the socket.  
-                clientA.Shutdown(SocketShutdown.Both);
-                clientA.Close();
-                clientB.Shutdown(SocketShutdown.Both);
-                clientB.Close();
-            } catch (Exception e) {
-                Console.WriteLine(e.ToString());
+        private static void StartClient(String action, String[] data) {
+            IPHostEntry ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
+            IPAddress ipAddressA = ipHostInfo.AddressList[0];
+            IPEndPoint remoteEPA = new IPEndPoint(ipAddressA, 11000);
+            Socket clientA = new Socket(ipAddressA.AddressFamily, SocketType.Stream, ProtocolType.Tcp);  
+            for (int i = 0; i < 4; i++)
+            if (action == "send") {
+                try {
+                    Send(clientA, data[i] + "<EOF>");
+                    sendDone.WaitOne();
+                } catch (Exception e) {
+                    Console.WriteLine(e.ToString());
+                }
+            } else if(action == "recieve") {
+                try {
+                    Receive(clientA);
+                    sendDone.WaitOne();
+                } catch (Exception e) {
+                    Console.WriteLine(e.ToString());
+                }
             }
+            clientA.Shutdown(SocketShutdown.Both);
+            clientA.Close();
         }
 
         private static void ConnectCallback(IAsyncResult ar) {
@@ -479,7 +475,6 @@ namespace VernamModified {
                 Console.WriteLine(e.ToString());
             }
         }
-
         /* End of TCP functions*/
 
     }
