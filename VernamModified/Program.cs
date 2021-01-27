@@ -302,9 +302,8 @@ namespace VernamModified {
 
             // Convert file to % 512 == 0
             Console.WriteLine("Vernam modified: Enter File to be Encrypted");
-            string path = @"Image.PNG";
-            byte[] arr = File.ReadAllBytes(path);
-            String str = BytesToUTF16(arr);
+            string path = @"large.txt";
+            string str = File.ReadAllText(path);
             str = conformOriginalFile(str);
 
             // Hash file 
@@ -337,7 +336,7 @@ namespace VernamModified {
             String hashkey = BytesToUTF16(sha512(gen_new_key));
 
             // Replace current key with new key
-            System.IO.File.WriteAllText(@"C:\Users\marcos\Documents\GitHub\Vernam-modified\" + client + "\\private.key", gen_new_key);
+            File.WriteAllText(@"C:\Users\marcos\Documents\GitHub\Vernam-modified\" + client + "\\private.key", gen_new_key);
 
             Send(CipherFile, hash, new_key, hashkey);
         }
@@ -388,37 +387,40 @@ namespace VernamModified {
             results = rep.Replace(results, "");
 
             // Display File results
-            String path = @"DecryptedImage.PNG";
-            File.WriteAllBytes(path, getStringToBytes(results));
+            String path = @"DecryptedLarge.txt";
+            File.WriteAllText(path, results);
 
             // Replace current key with new key
-            System.IO.File.WriteAllText(@"C:\Users\marcos\Documents\GitHub\Vernam-modified\" + client + "\\private.key", update_key);
+            File.WriteAllText(@"C:\Users\marcos\Documents\GitHub\Vernam-modified\" + client + "\\private.key", update_key);
         }
 
         /* Start of TCP functions */
         private static void StartClient(String action, String[] data) {
             IPHostEntry ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
-            IPAddress ipAddressA = ipHostInfo.AddressList[0];
-            IPEndPoint remoteEPA = new IPEndPoint(ipAddressA, 11000);
-            Socket clientA = new Socket(ipAddressA.AddressFamily, SocketType.Stream, ProtocolType.Tcp);  
-            for (int i = 0; i < 4; i++)
-            if (action == "send") {
-                try {
-                    Send(clientA, data[i] + "<EOF>");
-                    sendDone.WaitOne();
-                } catch (Exception e) {
-                    Console.WriteLine(e.ToString());
-                }
-            } else if(action == "recieve") {
-                try {
-                    Receive(clientA);
-                    sendDone.WaitOne();
-                } catch (Exception e) {
-                    Console.WriteLine(e.ToString());
+            IPAddress ipAddress = ipHostInfo.AddressList[0];
+            Socket client = new Socket(ipAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+            IPEndPoint remoteEP = new IPEndPoint(ipAddress, 11000);
+            client.BeginConnect(remoteEP, new AsyncCallback(ConnectCallback), client);
+            connectDone.WaitOne();
+            for (int i = 0; i < 4; i++) {
+                if (action == "send") {
+                    try {
+                        Send(client, data[i] + "<EOF>");
+                        sendDone.WaitOne();
+                    } catch (Exception e) {
+                        Console.WriteLine(e.ToString());
+                    }
+                } else if (action == "recieve") {
+                    try {
+                        Receive(client);
+                        sendDone.WaitOne();
+                    } catch (Exception e) {
+                        Console.WriteLine(e.ToString());
+                    }
                 }
             }
-            clientA.Shutdown(SocketShutdown.Both);
-            clientA.Close();
+            client.Shutdown(SocketShutdown.Both);
+            client.Close();
         }
 
         private static void ConnectCallback(IAsyncResult ar) {

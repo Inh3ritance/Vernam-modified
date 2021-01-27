@@ -5,7 +5,7 @@ using System.Threading;
 using System.Text;
 
 namespace VernamModifedServer {
-    // State object for reading client data asynchronously  
+    // State object for reading client data asynchronously
     public class StateObject {
         public const int BufferSize = 1024;
         public byte[] buffer = new byte[BufferSize];
