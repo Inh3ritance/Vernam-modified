@@ -11,7 +11,7 @@ using System.Security.Cryptography;
 
 namespace VernamModified {
 
-    // State object for receiving data from remote device
+    // State object for receiving data from remote device // Networking
     public class StateObject {
         public Socket workSocket = null;
         public const int BufferSize = 1024;
@@ -24,7 +24,7 @@ namespace VernamModified {
         private static String privatekey;
         private static String client;
 
-        // ManualResetEvent instances signal completion.  
+        // ManualResetEvent instances signal completion. // Networking
         private static ManualResetEvent connectDone = new ManualResetEvent(false);
         private static ManualResetEvent sendDone = new ManualResetEvent(false);
         private static ManualResetEvent receiveDone = new ManualResetEvent(false);
@@ -32,15 +32,17 @@ namespace VernamModified {
 
         static void Main(string[] args) {
 
-            //ASK if client A or B
+            // ASK if client A or B
             Console.WriteLine("Are you client A or B (A/B)");
             if (Console.ReadLine().Equals("A"))
                 client = "ClientA";
             else
                 client = "ClientB";
 
-            // Recieved from RSA intially, store locally after initializing key
+            // Recieved from RSA intially or in person, store locally after initializing key
+            // In this case retrieve key from file
             retrieveKeyFromFile();
+
             // Generate 2nd private key from 1st private key
             String private_key2 = gen2ndKey();
 
@@ -52,7 +54,8 @@ namespace VernamModified {
             else
                 local = false;
 
-            //Ask user to Encrypt or Decrypt
+            // Ask user to Encrypt or Decrypt, symetrically
+            // Also ask if using SCM or CBC, SCM = Simple Control Mode, CBC = Cipher Block Chains
             Console.WriteLine("Encrypt/Decrypt(E/D)");
             if (Console.ReadLine().Equals("E")) {
                 Console.WriteLine("Text or File(T/F)");
@@ -68,7 +71,8 @@ namespace VernamModified {
                     DecrCBC(privatekey, private_key2);
             }
         }
-
+        
+        // Generate SHA-512 Hash
         static byte[] sha512(String str) {
             using (SHA512 sha512Hash = SHA512.Create()) {
                 byte[] sourceBytes = Encoding.UTF8.GetBytes(str);
@@ -77,6 +81,7 @@ namespace VernamModified {
             }
         }
 
+        // Convert bytecode to UTF16 characters
         static String BytesToUTF16(byte[] bits) {
             StringBuilder builder = new StringBuilder();
             for (int i = 0; i < bits.Length; i++)
@@ -84,10 +89,12 @@ namespace VernamModified {
             return builder.ToString();
         }
 
+        // Convert String to ByteCode
         static byte[] getStringToBytes(String str) {
             return System.Text.Encoding.UTF8.GetBytes(str);
         }
 
+        // Convert String To Bitcode
         static BitArray convertStringToBits(String str) {
             byte[] bt = getStringToBytes(str);
             Array.Reverse(bt);
@@ -95,6 +102,7 @@ namespace VernamModified {
             return bit;
         }
 
+        // Print Bits
         static void PrintBits(BitArray bit) {
             StringBuilder sb = new StringBuilder();
             for (int i = bit.Length - 1; i >= 0; i--){
@@ -106,6 +114,7 @@ namespace VernamModified {
             Console.WriteLine(sb.ToString());
         }
 
+        // Convert Bits to String
         static string convertBitsToString(BitArray bit) {
             StringBuilder sb = new StringBuilder();
             for (int i = bit.Length - 1; i >= 0; i--) {
@@ -117,6 +126,7 @@ namespace VernamModified {
             return sb.ToString();
         }
 
+        // Convert Bits to UTF16 Characters
         static String convertBitsToUTF16(BitArray bits) {
           return Encoding.UTF8.GetString(Regex.Split(convertBitsToString(bits), "(.{8})")
               .Where(binary => !String.IsNullOrEmpty(binary))
@@ -124,6 +134,7 @@ namespace VernamModified {
               .ToArray());
         }
 
+        // CSRNG FUNCTION generate 128 character long key string
         static String GenerateRandomCryptographicKey(int keyLength) {
             RNGCryptoServiceProvider rngCryptoServiceProvider = new RNGCryptoServiceProvider();
             byte[] randomBytes = new byte[keyLength];
@@ -131,6 +142,7 @@ namespace VernamModified {
             return Convert.ToBase64String(randomBytes);
         }
 
+        // Get Files from local trusted computer source
         static void retrieveKeyFromFile(){
             if (System.IO.File.ReadAllText(@"C:\Users\marcos\Documents\GitHub\Vernam-modified\" + client + "\\private.key").Length == 0) {
                 privatekey = GenerateRandomCryptographicKey(384);
@@ -140,6 +152,7 @@ namespace VernamModified {
             }
         }
 
+        // Generate secondary key from primary key
         static String gen2ndKey() {
             String str = BytesToUTF16(sha512(privatekey));
             while (privatekey.Length != str.Length)
@@ -147,6 +160,7 @@ namespace VernamModified {
             return str;
         }
 
+        // CBC generate mutiple secondary keys
         static String genMultKeys(String priv) {
             String str = BytesToUTF16(sha512(priv));
             while (privatekey.Length != str.Length)
@@ -154,6 +168,7 @@ namespace VernamModified {
             return str;
         }
 
+        // Add Salt to Text
         static String conformOriginalText(){
             Random random = new Random();
             String str = Console.ReadLine();
@@ -167,6 +182,7 @@ namespace VernamModified {
             return str;
         }
 
+        // Add Salt to CBC text/File
         static String conformOriginalFile(String str) {
             Random random = new Random();
             string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"; // Prevent Hash Tables/Rainbows
@@ -179,6 +195,8 @@ namespace VernamModified {
             return str;
         }
 
+
+        // Encryption Process
         static void Encryption(String privatekey, String private_key2, bool local) {
 
             // Prompt user M1
@@ -213,11 +231,12 @@ namespace VernamModified {
             String new_key = convertBitsToUTF16(new_key_bits.Xor(e1));
 
             // Hash new key
-            String hashkey = BytesToUTF16(sha512(gen_new_key));
+            String hashkey = BytesToUTF16(sha512(gen_new_key + privatekey)); // order matters as long as consistent
 
-            // Replace current key with new key
+            // Replace current key with new key, overwrite file, removing trace of previous key
             System.IO.File.WriteAllText(@"C:\Users\marcos\Documents\GitHub\Vernam-modified\" + client + "\\private.key", gen_new_key);
 
+            // Send Locally or over network
             String[] data = new String[4];
             data[0] = CipherText;
             data[1] = hash;
@@ -231,6 +250,7 @@ namespace VernamModified {
             
         }
 
+        // Send Locally replace Files in directory
         static void Send(String CipherText, String hash, String new_key, String hashkey) {
             System.IO.File.WriteAllText(@"C:\Users\marcos\Documents\GitHub\Vernam-modified\Data\CipherText.txt", CipherText);
             System.IO.File.WriteAllText(@"C:\Users\marcos\Documents\GitHub\Vernam-modified\Data\CipherHash.txt", hash);
@@ -238,8 +258,10 @@ namespace VernamModified {
             System.IO.File.WriteAllText(@"C:\Users\marcos\Documents\GitHub\Vernam-modified\Data\HashKey.txt", hashkey);
         }
 
+        // Encyrption Process
         static void Decryption(String privateKey, String privateKey2, bool local) {
 
+            // Retrieve encrpyted and hash results
             String[] str = Read();
             String cipherText = str[0];
             String hash = str[1];
@@ -264,7 +286,7 @@ namespace VernamModified {
             String update_key = convertBitsToUTF16(new_key_bits.Xor(e1));
 
             // Check for tampering
-            if (!BytesToUTF16(sha512(update_key)).Equals(hashKey)){
+            if (!BytesToUTF16(sha512(update_key+privatekey)).Equals(hashKey)){
                 Console.WriteLine("There has been tampering with the hash or key, replace key with new one from authority RSA");
                 return;
             } else if (!BytesToUTF16(sha512(results)).Equals(hash)) {
@@ -283,6 +305,7 @@ namespace VernamModified {
             System.IO.File.WriteAllText(@"C:\Users\marcos\Documents\GitHub\Vernam-modified\" + client + "\\private.key", update_key);
         }
 
+        // Read From Send Locally through directory
         static String[] Read() {
             String[] str = new String[4];
             str[0] = System.IO.File.ReadAllText(@"C:\Users\marcos\Documents\GitHub\Vernam-modified\Data\CipherText.txt");
@@ -292,15 +315,10 @@ namespace VernamModified {
             return str;
         }
 
-        static BitArray bytesToBits(byte[] arr) {
-            Array.Reverse(arr);
-            BitArray bit = new BitArray(arr);
-            return bit;
-        }
-
+        // Encryption utilizing CBC, Large File types, Storage devices, etc.
         static void EncrCBC(String privateKey, String privateKey2) {
 
-            // Convert file to % 512 == 0
+            // Convert file to % 512 == 0 and append salt
             Console.WriteLine("Vernam modified: Enter File to be Encrypted");
             string path = @"large.txt";
             string str = File.ReadAllText(path);
@@ -333,14 +351,17 @@ namespace VernamModified {
             String new_key = convertBitsToUTF16(new_key_bits.Xor(key));
 
             // Hash new key
-            String hashkey = BytesToUTF16(sha512(gen_new_key));
+            String hashkey = BytesToUTF16(sha512(gen_new_key+privatekey));
 
             // Replace current key with new key
             File.WriteAllText(@"C:\Users\marcos\Documents\GitHub\Vernam-modified\" + client + "\\private.key", gen_new_key);
 
+
+            // Local only, network version not available at the moment
             Send(CipherFile, hash, new_key, hashkey);
         }
 
+        // Decryption utilizing CBC
         static void DecrCBC(String privateKey, String privateKey2) {
             
             // Get our data
@@ -374,7 +395,7 @@ namespace VernamModified {
             String update_key = convertBitsToUTF16(new_key_bits.Xor(e1));
 
             // Check for tampering
-            if (!BytesToUTF16(sha512(update_key)).Equals(hashKey)) {
+            if (!BytesToUTF16(sha512(update_key+privatekey)).Equals(hashKey)) {
                 Console.WriteLine("There has been tampering with the hash or key, replace key with new one from authority RSA");
                 return;
             } else if (!BytesToUTF16(sha512(results)).Equals(hash)) {
@@ -394,7 +415,14 @@ namespace VernamModified {
             File.WriteAllText(@"C:\Users\marcos\Documents\GitHub\Vernam-modified\" + client + "\\private.key", update_key);
         }
 
-        /* Start of TCP functions */
+        // Convert bytes to Bits, unused function
+        static BitArray bytesToBits(byte[] arr) {
+            Array.Reverse(arr);
+            BitArray bit = new BitArray(arr);
+            return bit;
+        }
+
+        /* Start of TCP functions, Network Functions*/
         private static void StartClient(String action, String[] data) {
             IPHostEntry ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
             IPAddress ipAddress = ipHostInfo.AddressList[0];
